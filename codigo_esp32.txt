@@ -1,0 +1,117 @@
+#include <WiFi.h>
+
+#define relay 23  
+#define ldr 36
+
+const char *ssid = "Eduardo";
+const char *senha = "Ed23072002";
+WiFiServer server(80);
+
+int Valorldr = 0;
+void setup() {
+// put your setup code here, to run once:
+Serial.begin(115200);
+pinMode(relay, OUTPUT);
+
+Serial.println("Conectando-se a rede: ");
+Serial.println(ssid);
+WiFi.begin(ssid,senha); //da entranda no WiFi
+while(WiFi.status() != WL_CONNECTED)
+{
+delay(1000);
+Serial.print(".");
+}
+Serial.println("WiFi conectado");
+Serial.println("Endereço de IP: ");
+Serial.println(WiFi.localIP());
+server.begin();
+
+}
+void loop() {
+
+while(WiFi.status() != WL_CONNECTED)
+{
+WiFi.begin(ssid,senha);
+Serial.println(".");
+delay(1000);
+}
+relay_WiFi();
+}
+void relay_WiFi()
+{
+WiFiClient client = server.available();
+if(client)
+{
+Serial.println("Novo Cliente Definido");
+String currentLine = "";
+while(client.connected())
+{
+if(client.available())
+{
+char c = client.read();
+Serial.write(c);
+if(c=='\n')
+{
+if(currentLine.length()==0)
+{
+
+client.println("HTTP/1.1 200 OK");
+client.println("Content-type:text/html");
+client.println("");
+client.println("<!DOCTYPE html>");
+client.println("<html lang='pt-br'>");
+client.println("<head>");
+client.println("<meta charset='UTF-8'>");
+client.println("<meta http-equiv='X-UA-Compatible' content='IE=edge'>");
+client.println("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+
+client.println("<title>Projeto A3 2023.1</title>");
+client.println("<link rel='stylesheet' href='style.css'>");
+
+client.println("<style type = 'text/css'>");
+
+client.println("body,html{height: 100%; margin: 0; color: white;}");
+client.println(".bg{ background-image: url('https://p4.wallpaperbetter.com/wallpaper/366/129/70/artwork-light-bulb-wallpaper-preview.jpg'); background-repeat: no-repeat; background-size: cover; background-position: center; background-attachment: fixed;}");
+client.println(".titulo-subtitulo { display: flex; flex-direction: column;align-items: flex-start;}");
+client.println(" h1, h2 { margin: 50px; margin-right: 1000px; font-size: 48px;}");
+client.println(" html,body{ display: grid; height: 100%; background: #33db7c; font-family: 'Lato', sans-serif;}");
+client.println(" button {text-align: center; margin-top: 50px; margin-right: 50px; padding: 10px 40px;border: 2px solid black;font-size: 20px;cursor: pointer;border-radius: 15px; position: relative; left: 100px;}");
+client.println(" h3 { margin: 50px; margin-right: 1000px; text-align: left; font-size: 30px; height: 1000px; }");
+client.println("li {list-style-type: none}");
+client.println("</style>");
+
+client.println("</head>");
+client.println("<body class='bg'>");
+client.println("<div class='cont'>");
+client.println("<h1>Projeto A3</h1>");
+client.println("<h2>Automatização Lâmpada</h2>");
+client.println("</div>");
+client.println("<li>");
+  client.println("<a href=\"/H1\"><button>LIGAR</button></a>");
+  client.println("<a href=\"/L1\"><button>DESLIGAR</button></a>");
+ client.println("</li>");
+client.println("</body>");
+client.println("</html>");
+
+
+Valorldr = analogRead(ldr);
+if(Valorldr > 1000)
+{
+  client.println("<h3> Lampada ligada </h3>");
+}
+else{
+  client.println("<h3> Lampada desligada </h3>");
+}
+break;
+}
+else currentLine="";
+}
+else if(c != '\r') currentLine += c;
+if(currentLine.endsWith("GET /H1"))digitalWrite(relay, HIGH); 
+if(currentLine.endsWith("GET /L1")) digitalWrite(relay, LOW);
+}
+}
+client.stop();
+Serial.println("Cliente desconectado.");
+}
+}
